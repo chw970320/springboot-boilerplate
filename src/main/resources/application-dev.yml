@@ -1,0 +1,78 @@
+﻿# 개발 서버 환경 설정
+# 사용법: java -jar app.jar --spring.profiles.active=dev
+# 또는: SPRING_PROFILES_ACTIVE=dev ./gradlew bootRun
+
+spring:
+  # 데이터베이스 연결 설정 (개발 서버)
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/boilerplate_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20 # 개발 서버는 더 많은 커넥션
+      minimum-idle: 10
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  # JPA 설정 (개발 서버)
+  jpa:
+    hibernate:
+      ddl-auto: validate # Flyway로 스키마 관리
+    show-sql: false # SQL 로깅 비활성화 (로그 파일로만)
+    properties:
+      hibernate:
+        generate_statistics: true # 통계 수집 (성능 모니터링)
+        format_sql: true # 포맷팅 활성화
+        cache:
+          use_second_level_cache: true # 캐시 활성화
+          use_query_cache: true
+
+# 서버 설정
+server:
+  port: ${SERVER_PORT:8080}
+
+# JWT 설정 (개발 서버용 - 환경변수 권장)
+jwt:
+  secret: ${JWT_SECRET:8c69c90489d542007af4440fea0483a2f24dccad3b4b8f7019d33291a19ca862}
+  expiration: 86400000 # 24 hours
+  refresh-expiration: 604800000 # 7 days
+
+# 로깅 설정 (개발 서버 - 적절한 레벨)
+logging:
+  level:
+    root: INFO
+    com.boilerplate: DEBUG
+    org.springframework.security: INFO
+    org.springframework.web: INFO
+    org.hibernate.SQL: INFO # SQL 쿼리는 INFO 레벨
+    org.hibernate.type.descriptor.sql.BasicBinder: INFO
+  file:
+    name: /var/log/springboot/dev-application.log
+    max-size: 50MB
+    max-history: 30
+
+# Actuator 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,env # 필요한 엔드포인트만
+  endpoint:
+    health:
+      show-details: when-authorized # 인증된 사용자만 상세 정보
+
+# Swagger UI (개발 서버에서는 활성화)
+springdoc:
+  swagger-ui:
+    enabled: true
+
+# 보안 관련 설정
+security:
+  allowed-ips: [] # 허용할 IP 목록 (예: 127.0.0.1, 192.168.0.1). 비어있으면 모든 IP 허용.
+  
+# 파일 저장 경로 설정
+file:
+  upload-dir: ./uploads # 파일이 업로드될 기본 경로
+  allowed-extensions: ["jpg", "jpeg", "png", "gif", "pdf", "txt", "zip"] # 허용할 파일 확장자 목록. 비어있으면 모두 허용.

@@ -1,0 +1,36 @@
+# 테스트 환경 설정
+
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop # 테스트마다 스키마 재생성
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        cache:
+          use_second_level_cache: false # 테스트에서는 캐시 비활성화
+          use_query_cache: false
+
+  flyway:
+    enabled: false # 테스트에서는 Flyway 비활성화 (Hibernate가 스키마 생성)
+
+  # 캐시 완전 비활성화 (테스트 환경)
+  cache:
+    type: none
+
+# JWT 테스트 설정
+jwt:
+  secret: 8c69c90489d542007af4440fea0483a2f24dccad3b4b8f7019d33291a19ca862
+  expiration: 3600000
+  refresh-expiration: 7200000
+
+# 로깅 설정 (테스트용 - 최소화)
+logging:
+  level:
+    root: WARN
+    com.boilerplate: DEBUG # 이 라인을 DEBUG로 변경합니다.
+    org.springframework.security: WARN
+    org.hibernate.SQL: DEBUG
+    org.testcontainers: DEBUG # Testcontainers 로깅 레벨을 DEBUG로 설정

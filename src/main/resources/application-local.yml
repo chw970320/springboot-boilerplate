@@ -1,0 +1,73 @@
+﻿# Local 개발 환경 설정
+# 사용법: ./gradlew bootRun (기본값)
+
+spring:
+  # 데이터베이스 연결 설정 (로컬 PostgreSQL)
+  datasource:
+    url: jdbc:postgresql://localhost:5432/boilerplate_db
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  # JPA 설정 (로컬 개발용)
+  jpa:
+    hibernate:
+      ddl-auto: update # 로컬에서는 자동 스키마 업데이트
+    show-sql: true # SQL 로깅 활성화
+    properties:
+      hibernate:
+        generate_statistics: true # 캐시 통계 확인을 위해 활성화
+        format_sql: true # 포맷팅 활성화
+        cache:
+          use_second_level_cache: true # 캐시 활성화
+          use_query_cache: true
+
+# 서버 설정
+server:
+  port: 8080
+
+# JWT 설정 (로컬 개발용 - 보안 수준 낮음)
+jwt:
+  secret: 8c69c90489d542007af4440fea0483a2f24dccad3b4b8f7019d33291a19ca862
+  expiration: 86400000 # 24 hours
+  refresh-expiration: 604800000 # 7 days
+
+# 로깅 설정 (상세 로그)
+logging:
+  level:
+    root: INFO
+    com.boilerplate: DEBUG # 애플리케이션 로그 상세
+    org.springframework.security: DEBUG # Security 로그 상세
+    org.springframework.web: DEBUG # Web 요청 로그
+    org.hibernate.SQL: DEBUG # SQL 쿼리
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE # SQL 파라미터
+    org.hibernate.stat: DEBUG # Hibernate 통계
+  file:
+    name: logs/local-application.log
+    max-size: 10MB
+    max-history: 7
+
+# 개발 편의 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*" # 로컬에서는 모든 Actuator 엔드포인트 노출
+  endpoint:
+    health:
+      show-details: always # 항상 상세 정보 표시
+
+# 보안 관련 설정
+security:
+  allowed-ips: [] # 허용할 IP 목록 (예: 127.0.0.1, 192.168.0.1). 비어있으면 모든 IP 허용.
+
+# 파일 저장 경로 설정
+file:
+  upload-dir: ./uploads # 파일이 업로드될 기본 경로
+  allowed-extensions: ["jpg", "jpeg", "png", "gif", "pdf", "txt", "zip"] # 허용할 파일 확장자 목록. 비어있으면 모두 허용.

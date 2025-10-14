@@ -1,0 +1,91 @@
+﻿spring:
+  application:
+    name: springboot-boilerplate
+
+  # 기본 프로필 설정 (local, dev, prod 중 하나 필수)
+  profiles:
+    default: local
+    active: ${SPRING_PROFILES_ACTIVE:local} # 환경변수로 오버라이드 가능
+
+  # JPA/Hibernate 공통 설정
+  jpa:
+    open-in-view: false # OSIV 비활성화 (성능 및 명확성)
+    properties:
+      hibernate:
+        format_sql: true # SQL 포맷팅
+        use_sql_comments: true # SQL 주석 추가
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+        # 배치 처리 최적화
+        jdbc:
+          batch_size: 20
+          fetch_size: 20
+        order_inserts: true
+        order_updates: true
+        batch_versioned_data: true
+
+        # 2차 캐시 설정 (EhCache)
+        cache:
+          use_second_level_cache: true
+          use_query_cache: true
+          region:
+            factory_class: org.hibernate.cache.jcache.JCacheRegionFactory
+
+        # 쿼리 최적화
+        default_batch_fetch_size: 100 # N+1 문제 해결
+
+  # Flyway 마이그레이션 설정
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    encoding: UTF-8
+
+  # 캐시 설정 (EhCache)
+  cache:
+    type: jcache
+    jcache:
+      config: classpath:ehcache.xml
+
+  # Spring Boot Actuator 설정
+  management:
+    endpoints:
+      web:
+        exposure:
+          include: health,info,metrics,prometheus
+        base-path: /actuator
+    endpoint:
+      health:
+        show-details: when-authorized
+    metrics:
+      export:
+        prometheus:
+          enabled: true
+
+# 서버 공통 설정
+server:
+  error:
+    include-message: always
+    include-binding-errors: always
+  http2:
+    enabled: true
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
+
+# OpenAPI/Swagger 설정
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operations-sorter: method
+    tags-sorter: alpha
+  show-actuator: false
+
+# 로깅 공통 설정
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
