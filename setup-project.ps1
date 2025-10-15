@@ -3,231 +3,225 @@
 # 최초 1회 실행 후 자동 삭제됩니다.
 
 $ErrorActionPreference = "Stop"
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8 # Git Bash/터미널 호환성용 인코딩 설정
 
 # --- 함수 정의 ---
-function Write-ColorOutput($Color, $Message) {
-    Write-Host $Message -ForegroundColor $Color
-}
-
+# 터미널 호환성을 위해 ASCII 문자로만 출력
 function Write-Header($Text) {
     Write-Output ""
-    Write-ColorOutput Cyan "═══════════════════════════════════════════════════"
-    Write-ColorOutput Cyan "  $Text"
-    Write-ColorOutput Cyan "═══════════════════════════════════════════════════"
+    Write-Output "==========================================================="
+    Write-Output "  $Text"
+    Write-Output "==========================================================="
     Write-Output ""
 }
 
 function Write-Step($Number, $Total, $Description) {
-    Write-ColorOutput Yellow "[$Number/$Total] $Description"
+    Write-Output "[$Number/$Total] $Description"
 }
 
 function Write-Success($Message) {
-    Write-ColorOutput Green "✓ $Message"
+    Write-Output "[OK] $Message"
 }
 
 function Write-Info($Message) {
-    Write-ColorOutput Cyan "ℹ $Message"
+    Write-Output "[INFO] $Message"
 }
 
 function Write-ErrorMsg($Message) {
-    Write-ColorOutput Red "❌ $Message"
+    Write-Output "[ERROR] $Message"
 }
 
 # --- 스크립트 시작 ---
-Clear-Host
+if ($IsWindows) { Clear-Host } else { Clear-Host }
 
-Write-Header "Spring Boot Boilerplate 프로젝트 설정"
+Write-Header "Spring Boot Boilerplate Project Setup"
 
-Write-Info "이 스크립트는 프로젝트를 커스터마이징하고 자동으로 삭제됩니다."
-Write-Info "현재 설정: boilerplate → 새로운 프로젝트명"
+Write-Info "This script will customize the project and then delete itself."
+Write-Info "Current setting: boilerplate -> new project name"
 Write-Output ""
 
 # --- 기본값 설정 ---
 $OldAppName = "boilerplate"
 $OldAppNamePascal = "Boilerplate"
 $OldBasePackage = "com.boilerplate"
+$EscapedOldBasePackage = [regex]::Escape($OldBasePackage)
 
 # 1. 프로젝트명 입력
-$NewAppNameInput = Read-Host -Prompt "프로젝트명을 입력하세요 (예: myService, userApi, blogApp)"
+$NewAppNameInput = Read-Host -Prompt "Enter the project name (e.g., myService, userApi, blogApp)"
 if ([string]::IsNullOrWhiteSpace($NewAppNameInput)) {
-    Write-ErrorMsg "프로젝트명을 입력해야 합니다."; exit 1
+    Write-ErrorMsg "Project name is required."; exit 1
 }
-$NewAppNameLower = ($NewAppNameInput.ToLower() -replace '\s', '')
+$NewAppNameLower = ($NewAppNameInput.ToLower() -replace '[\s-]', '')
 $NewAppNamePascal = (Get-Culture).TextInfo.ToTitleCase($NewAppNameLower)
-Write-Output ""
 
 # 2. 패키지명 확인
 $defaultPackage = "com.$NewAppNameLower"
-$packageInput = Read-Host -Prompt "패키지명을 입력하세요 (엔터: $defaultPackage)"
+$packageInput = Read-Host -Prompt "Enter the package name (press Enter for: $defaultPackage)"
 $NewPackage = if ([string]::IsNullOrWhiteSpace($packageInput)) { $defaultPackage } else { $packageInput.ToLower() }
 Write-Output ""
 
 # 3. 데이터베이스명 확인
 $defaultDbName = "${NewAppNameLower}_db"
-$dbInput = Read-Host -Prompt "데이터베이스명을 입력하세요 (엔터: $defaultDbName)"
+$dbInput = Read-Host -Prompt "Enter the database name (press Enter for: $defaultDbName)"
 $NewDbName = if ([string]::IsNullOrWhiteSpace($dbInput)) { $defaultDbName } else { $dbInput }
 Write-Output ""
 
 # --- 변경사항 확인 ---
-Write-Header "변경사항 확인"
-Write-Host "  기존 패키지:    $OldBasePackage → $NewPackage"
-Write-Host "  메인 클래스:    ${OldAppNamePascal}Application → ${NewAppNamePascal}Application"
-Write-Host "  데이터베이스:   ${OldAppName}_db → $NewDbName"
-Write-Host "  프로젝트명:     springboot-$OldAppName → springboot-$NewAppNameLower"
+Write-Header "Review Changes"
+Write-Output "  Old Package:    $OldBasePackage -> $NewPackage"
+Write-Output "  Main Class:     ${OldAppNamePascal}Application -> ${NewAppNamePascal}Application"
+Write-Output "  Database:       ${OldAppName}_db -> $NewDbName"
+Write-Output "  Project Name:   springboot-$OldAppName -> springboot-$NewAppNameLower"
 Write-Output ""
 
-$confirm = Read-Host "계속 진행하시겠습니까? (Y/n)"
+$confirm = Read-Host "Do you want to continue? (Y/n)"
 if ($confirm -match '^[nN]$') {
-    Write-ColorOutput Yellow "설정이 취소되었습니다."; exit 0
+    Write-Output "Setup canceled."; exit 0
 }
 
-Write-Header "프로젝트 설정 시작"
+Write-Header "Starting Project Setup"
 
-$totalSteps = 10
+$totalSteps = 6
 $currentStep = 0
 
-# Step 1: 패키지 디렉토리 변경
+# Step 1: 패키지 디렉토리 이동
 $currentStep++
-Write-Step $currentStep $totalSteps "패키지 디렉토리 변경 중..."
+Write-Step $currentStep $totalSteps "Moving package directories..."
 
+$oldPackagePath = $OldBasePackage -replace '\.', '/'
 $newPackagePath = $NewPackage -replace '\.', '/'
-$oldBaseSrcPath = "src/main/java/$OldBasePackage"
+
+# 메인 소스 디렉토리 이동
+$oldBaseSrcPath = "src/main/java/$oldPackagePath"
 $newBaseSrcPath = "src/main/java/$newPackagePath"
-
-# 기존 com.boilerplate 하위의 도메인 폴더들을 새 패키지 경로로 이동
-$domainFolders = Get-ChildItem -Path $oldBaseSrcPath -Directory -Name
-foreach ($folder in $domainFolders) {
-    $sourcePath = Join-Path $oldBaseSrcPath $folder
-    $destPath = Join-Path $newBaseSrcPath $folder
-    
-    New-Item -ItemType Directory -Path $destPath -Force | Out-Null
-    Move-Item -Path "$sourcePath/*" -Destination $destPath -Force
-    Write-Success "$folder 도메인 소스 이동 완료"
+if (Test-Path $oldBaseSrcPath) {
+    $parentDir = Split-Path -Path $newBaseSrcPath -Parent
+    if (-not (Test-Path $parentDir)) { New-Item -ItemType Directory -Path $parentDir -Force | Out-Null }
+    Move-Item -Path $oldBaseSrcPath -Destination $newBaseSrcPath -Force
+    Write-Success "Moved main source directory."
 }
 
-# BoilerplateApplication.java 이동
-$oldAppFile = Join-Path $oldBaseSrcPath "BoilerplateApplication.java"
-$newAppFile = Join-Path $newBaseSrcPath "${NewAppNamePascal}Application.java"
-if (Test-Path $oldAppFile) {
-    New-Item -ItemType Directory -Path (Split-Path $newAppFile) -Force | Out-Null
-    Move-Item -Path $oldAppFile -Destination $newAppFile -Force
-    Write-Success "BoilerplateApplication.java 이동 완료"
-}
-
-# 테스트 소스도 동일하게 이동
-$oldTestBaseSrcPath = "src/test/java/$OldBasePackage"
+# 테스트 소스 디렉토리 이동
+$oldTestBaseSrcPath = "src/test/java/$oldPackagePath"
 $newTestBaseSrcPath = "src/test/java/$newPackagePath"
-$testDomainFolders = Get-ChildItem -Path $oldTestBaseSrcPath -Directory -Name
-foreach ($folder in $testDomainFolders) {
-    $sourcePath = Join-Path $oldTestBaseSrcPath $folder
-    $destPath = Join-Path $newTestBaseSrcPath $folder
-    
-    New-Item -ItemType Directory -Path $destPath -Force | Out-Null
-    Move-Item -Path "$sourcePath/*" -Destination $destPath -Force
-    Write-Success "$folder 테스트 소스 이동 완료"
+if (Test-Path $oldTestBaseSrcPath) {
+    $parentDir = Split-Path -Path $newTestBaseSrcPath -Parent
+    if (-not (Test-Path $parentDir)) { New-Item -ItemType Directory -Path $parentDir -Force | Out-Null }
+    Move-Item -Path $oldTestBaseSrcPath -Destination $newTestBaseSrcPath -Force
+    Write-Success "Moved test source directory."
 }
 
-# 빈 디렉토리 정리
-Get-ChildItem -Path "src/main/java/com", "src/test/java/com" -Directory -Recurse | Where-Object { (Get-ChildItem $_.FullName).Count -eq 0 } | Remove-Item -Recurse -ErrorAction SilentlyContinue
-
-# Step 2: 클래스 파일명 변경 (메인/테스트 Application 파일은 이미 이동 시 변경됨)
+# Step 2: 애플리케이션 파일 이름 변경
 $currentStep++
-Write-Step $currentStep $totalSteps "메인/테스트 클래스명 변경 확인..."
-Write-Success "클래스 파일명은 이동 단계에서 처리되었습니다."
+Write-Step $currentStep $totalSteps "Renaming application files..."
+
+$mainAppFile = Join-Path $newBaseSrcPath "BoilerplateApplication.java"
+if (Test-Path $mainAppFile) {
+    Rename-Item -Path $mainAppFile -NewName "${NewAppNamePascal}Application.java" -Force
+    Write-Success "Renamed main application file."
+}
+
+$testAppFile = Join-Path $newTestBaseSrcPath "BoilerplateApplicationTests.java"
+if (Test-Path $testAppFile) {
+    Rename-Item -Path $testAppFile -NewName "${NewAppNamePascal}ApplicationTests.java" -Force
+    Write-Success "Renamed test application file."
+}
 
 # Step 3: 프로젝트 전체 내용 변경
 $currentStep++
-Write-Step $currentStep $totalSteps "프로젝트 전체 내용 변경 중..."
+Write-Step $currentStep $totalSteps "Replacing content across the project..."
 $filesToProcess = Get-ChildItem -Path . -Recurse -File | Where-Object { 
-    $_.FullName -notmatch "\.git" -and 
-    $_.Name -notmatch "setup-project\.(sh|bat|ps1)" -and 
-    $_.Name -notmatch "SETUP_GUIDE\.md" -and 
-    $_.FullName -notmatch "build/generated/querydsl" 
+    $_.FullName -notmatch '\\.git' -and 
+    $_.Name -notmatch 'setup-project\.(sh|bat|ps1)' -and 
+    $_.Name -notmatch 'SETUP_GUIDE\.md' -and
+    $_.FullName -notmatch '[\\/]build[\\/]generated[\\/]querydsl'
 }
 
 foreach ($file in $filesToProcess) {
-    $content = Get-Content -Path $file.FullName -Raw -Encoding UTF8
-    $newContent = $content -replace $OldBasePackage, $NewPackage `
-                              -replace "springboot-$OldAppName", "springboot-$NewAppNameLower" `
-                              -replace "${OldAppName}_db", $NewDbName `
-                              -replace "${OldAppNamePascal}Application", "${NewAppNamePascal}Application" `
-                              -replace $OldAppNamePascal, $NewAppNamePascal `
-                              -replace $OldAppName, $NewAppNameLower
+    try {
+        $content = [System.IO.File]::ReadAllText($file.FullName)
+        # 가장 구체적인 것부터 교체 (예: BoilerplateApplicationTests -> BoilerplateApplication -> Boilerplate)
+        $newContent = $content -replace "${OldAppNamePascal}ApplicationTests", "${NewAppNamePascal}ApplicationTests" `
+                                  -replace "${OldAppNamePascal}Application", "${NewAppNamePascal}Application" `
+                                  -replace $EscapedOldBasePackage, $NewPackage `
+                                  -replace "springboot-$OldAppName", "springboot-$NewAppNameLower" `
+                                  -replace "${OldAppName}_db", $NewDbName `
+                                  -replace $OldAppNamePascal, $NewAppNamePascal `
+                                  -replace $OldAppName, $NewAppNameLower
 
-    # QueryDSL Q-Type 경로 업데이트 (build.gradle.kts에서 사용)
-    $newContent = $newContent -replace "srcDirs(\"src/main/java\", \"build/generated/querydsl\")", "srcDirs(\"src/main/java\", \"build/generated/querydsl\")"
-    $newContent = $newContent -replace "com.boilerplate.api", "$NewPackage.api" # AOP 포인트컷 등
-    $newContent = $newContent -replace "com.boilerplate.service", "$NewPackage.service"
-    $newContent = $newContent -replace "com.boilerplate.mapper", "$NewPackage.mapper"
-    $newContent = $newContent -replace "com.boilerplate.domain", "$NewPackage.domain"
-
-    if ($newContent -ne $content) {
-        $newContent | Set-Content -Path $file.FullName -Encoding UTF8 -NoNewline
+        if ($newContent -ne $content) {
+            [System.IO.File]::WriteAllText($file.FullName, $newContent, [System.Text.UTF8Encoding]::new($false))
+        }
+    } catch {
+        Write-ErrorMsg "Error processing file: $($file.FullName) - $($_.Exception.Message)"
     }
 }
-Write-Success "모든 관련 문자열 치환 완료"
+Write-Success "Replaced all relevant strings."
 
-# Step 4: build.gradle.kts 수정
+# Step 4: Gradle 파일 수정
 $currentStep++
-Write-Step $currentStep $totalSteps "build.gradle.kts 수정 중..."
-$buildGradleContent = Get-Content "build.gradle.kts" -Raw -Encoding UTF8
-$buildGradleContent = $buildGradleContent -replace "group = \"$OldBasePackage\"", "group = \"$NewPackage\""
-$buildGradleContent = $buildGradleContent -replace "srcDirs(\"src/main/java\", \"build/generated/querydsl\")", "srcDirs(\"src/main/java\", \"build/generated/querydsl\")"
-$buildGradleContent | Set-Content "build.gradle.kts" -Encoding UTF8 -NoNewline
-Write-Success "build.gradle.kts 업데이트"
+Write-Step $currentStep $totalSteps "Updating Gradle files..."
 
-# Step 5: settings.gradle.kts 수정
-$currentStep++
-Write-Step $currentStep $totalSteps "settings.gradle.kts 수정 중..."
-(Get-Content "settings.gradle.kts") -replace "rootProject.name = \"springboot-$OldAppName\"", "rootProject.name = \"springboot-$NewAppNameLower\"" | Set-Content "settings.gradle.kts" -Encoding UTF8 -NoNewline
-Write-Success "settings.gradle.kts 업데이트"
+$buildGradlePath = "build.gradle.kts"
+$buildGradleContent = [System.IO.File]::ReadAllText($buildGradlePath)
+$oldGroupString = 'group = "' + $OldBasePackage + '"'
+$newGroupString = 'group = "' + $NewPackage + '"'
+$buildGradleContent = $buildGradleContent.Replace($oldGroupString, $newGroupString)
+[System.IO.File]::WriteAllText($buildGradlePath, $buildGradleContent, [System.Text.UTF8Encoding]::new($false))
+Write-Success "build.gradle.kts updated."
 
-# Step 6: Git 저장소 확인
+$settingsGradlePath = "settings.gradle.kts"
+$settingsGradleContent = [System.IO.File]::ReadAllText($settingsGradlePath)
+$oldRootProjectString = 'rootProject.name = "springboot-' + $OldAppName + '"'
+$newRootProjectString = 'rootProject.name = "springboot-' + $NewAppNameLower + '"'
+$settingsGradleContent = $settingsGradleContent.Replace($oldRootProjectString, $newRootProjectString)
+[System.IO.File]::WriteAllText($settingsGradlePath, $settingsGradleContent, [System.Text.UTF8Encoding]::new($false))
+Write-Success "settings.gradle.kts updated."
+
+# Step 5: Git 저장소 확인
 $currentStep++
-Write-Step $currentStep $totalSteps "Git 저장소 확인 중..."
+Write-Step $currentStep $totalSteps "Checking Git repository..."
 if (Test-Path ".git") {
-    Write-Info "기존 Git 저장소 발견 (유지됨)"
+    Write-Info "Existing Git repository found (will be kept)."
 } else {
-    $gitInit = Read-Host "새로운 Git 저장소를 초기화하시겠습니까? (y/N)"
+    $gitInit = Read-Host "Initialize a new Git repository? (y/N)"
     if ($gitInit -match '^[yY]$') {
         git init
-        Write-Success "Git 저장소 초기화 완료"
+        Write-Success "Git repository initialized."
     }
 }
 
-# Step 7: 완료 및 다음 단계 안내
+# Step 6: 완료 및 다음 단계 안내
 $currentStep++
-Write-Step $currentStep $totalSteps "완료 처리 중..."
-Write-Header "설정 완료!"
-Write-ColorOutput Green "✅ 프로젝트가 성공적으로 설정되었습니다!"
+Write-Step $currentStep $totalSteps "Finalizing setup..."
+Write-Header "Setup Complete!"
+Write-Output "Project has been set up successfully!"
 Write-Output ""
-Write-Output "변경 요약:"
-Write-Output "  • 패키지: $NewPackage"
-Write-Output "  • 메인 클래스: ${NewAppNamePascal}Application"
-Write-Output "  • 데이터베이스: $NewDbName"
-Write-Output "  • 프로젝트명: springboot-$NewAppNameLower"
+Write-Output "Summary of changes:"
+Write-Output "  * Package: $NewPackage"
+Write-Output "  * Main Class: ${NewAppNamePascal}Application"
+Write-Output "  * Database: $NewDbName"
+Write-Output "  * Project Name: springboot-$NewAppNameLower"
 Write-Output ""
-Write-ColorOutput Cyan "다음 단계:"
-Write-Output "  1. 데이터베이스 생성: CREATE DATABASE $NewDbName;"
-Write-Output "  2. 빌드 및 실행: ./gradlew clean build && ./gradlew bootRun"
-Write-Output "  3. API 테스트: http://localhost:8080/swagger-ui.html"
+Write-Output "Next Steps:"
+Write-Output "  1. Create the database: CREATE DATABASE $NewDbName;"
+Write-Output "  2. Build and run: ./gradlew clean build && ./gradlew bootRun"
+Write-Output "  3. Test the API: http://localhost:8080/swagger-ui.html"
 Write-Output ""
 
-# Step 8: 스크립트 자동 삭제
-$currentStep++
-Write-Step $currentStep $totalSteps "스크립트 자동 삭제 준비..."
-$cleanup = Read-Host "setup 스크립트를 삭제하시겠습니까? (Y/n)"
+# 스크립트 자동 삭제
+$cleanup = Read-Host "Delete setup scripts? (Y/n)"
 if (-not ($cleanup -match '^[nN]$')) {
     Write-Output ""
-    Write-ColorOutput Yellow "정리 중..."
+    Write-Info "Cleaning up..."
     Get-Item -Path "setup-project.ps1", "setup-project.bat", "setup-project.sh", "SETUP_GUIDE.md" -ErrorAction SilentlyContinue | Remove-Item -Force
-    Write-Success "관련 설정 파일 삭제 완료"
+    Write-Success "Related setup files deleted."
     Write-Output ""
-    Write-ColorOutput Green "🎉 모든 설정이 완료되었습니다! 이제 깔끔한 프로젝트로 개발을 시작하세요!"
+    Write-Output "All set! Happy coding!"
 } else {
     Write-Output ""
-    Write-ColorOutput Yellow "setup 스크립트가 유지됩니다."
-    Write-ColorOutput Cyan "나중에 수동으로 삭제하세요: Remove-Item setup-project.*"
+    Write-Info "Setup scripts will be kept."
+    Write-Info "Please delete them manually later: Remove-Item setup-project.*"
 }
 
 Write-Output ""

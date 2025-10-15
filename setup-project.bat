@@ -1,4 +1,5 @@
 @echo off
+chcp 65001 > nul
 REM Spring Boot Boilerplate 프로젝트 초기 설정 (Windows Batch)
 REM 최초 1회 실행 후 자동 삭제됩니다.
 
