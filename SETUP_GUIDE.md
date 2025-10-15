@@ -31,6 +31,15 @@ chmod +x setup-project.sh
 ./setup-project.sh
 ```
 
+#### 프로젝트 설정 재시도
+```bash
+# 1. 이전 상태로 변경
+git reset --hard HEAD
+
+# 2. 파일 정리
+git clean -fd
+```
+
 ### 3. 대화형 설정
 
 스크립트를 실행하면 다음 정보를 입력받습니다:

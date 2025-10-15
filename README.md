@@ -23,6 +23,13 @@ cd [프로젝트명]
 # Linux/Mac
 chmod +x setup-project.sh
 ./setup-project.sh
+
+# 재시도 방법
+# 1. 이전 상태로 변경
+git reset --hard HEAD
+
+# 2. 파일 정리
+git clean -fd
 ```
 
 대화형으로 프로젝트명, 패키지명, DB명을 입력하면 자동으로 설정됩니다.
