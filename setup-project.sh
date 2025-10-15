@@ -157,14 +157,14 @@ NEW_TEST_FILE="src/test/java/$NEW_PACKAGE_PATH/${NEW_APP_NAME_PASCAL}Application
 if [ -f "$OLD_TEST_FILE" ]; then
     mv "$OLD_TEST_FILE" "$NEW_TEST_FILE"
     print_success "${OLD_APP_NAME_PASCAL}ApplicationTests.java → ${NEW_APP_NAME_PASCAL}ApplicationTests.java"
-}
+fi
 
 # Step 3: 프로젝트 전체 내용 변경
 CURRENT_STEP=$((CURRENT_STEP+1))
 print_step $CURRENT_STEP $TOTAL_STEPS "프로젝트 전체 내용 변경 중..."
 
 # 모든 텍스트 기반 파일을 대상으로 변경
-# --exclude-dir=".git" --exclude="setup-project.*" --exclude="SETUP_GUIDE.md" --exclude="build/generated/querydsl" 추가
+# --exclude-dir=".git" --exclude="setup-project.*" --exclude="SETUP_GUIDE.md" --exclude-dir="build/generated/querydsl" 추가
 FILES=$(grep -rl --exclude-dir=".git" --exclude="setup-project.*" --exclude="SETUP_GUIDE.md" --exclude-dir="build/generated/querydsl" "boilerplate" . || true)
 
 for file in $FILES; do
