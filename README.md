@@ -11,8 +11,8 @@ REST API 기반 Spring Boot 보일러플레이트 프로젝트로 JWT 인증, Po
 "Use this template" 버튼 클릭
 
 # 또는 Clone
-git clone https://github.com/your-username/springboot-boilerplate.git my-project
-cd my-project
+git clone https://github.com/chw970320/springboot-boilerplate.git [프로젝트명]
+cd [프로젝트명]
 ```
 
 ### 2. 프로젝트 설정 (최초 1회)

@@ -8,8 +8,8 @@ Spring Boot Boilerplate를 사용하여 새 프로젝트를 시작하는 방법�
 
 #### 프로젝트 클론
 ```bash
-git clone https://github.com/your-username/springboot-boilerplate.git my-project
-cd my-project
+git clone https://github.com/chw970320/springboot-boilerplate.git [프로젝트명]
+cd [프로젝트명]
 ```
 
 ### 2. 프로젝트 설정 (최초 1회)
